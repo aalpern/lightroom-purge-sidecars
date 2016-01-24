@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"flag"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
@@ -89,11 +90,44 @@ func (c *Catalog) ProcessSidecars(handler func(string, string) error) error {
 	return nil
 }
 
+type SidecarStats struct {
+	Count          uint
+	TotalSizeBytes int64
+}
+
+func (c *Catalog) GetSidecarStats() *SidecarStats {
+	var count uint
+	var size int64
+
+	c.ProcessSidecars(func(sidecarPath string, originalPath string) error {
+		file, err := os.Open(sidecarPath)
+		if err != nil {
+			return err
+		}
+
+		info, err := file.Stat()
+		if err != nil {
+			return err
+		}
+
+		size += info.Size()
+		count++
+
+		return nil
+	})
+
+	return &SidecarStats{Count: count, TotalSizeBytes: size}
+}
+
 func main() {
-	if len(os.Args) < 2 {
+	var delete = false
+	flag.BoolVar(&delete, "delete", false, "Delete all JPG sidecar files.")
+	flag.Parse()
+
+	if len(flag.Args()) < 1 {
 		log.Fatalf("Must supply a path to a Lightroom catalog file.")
 	}
-	path := os.Args[1]
+	path := flag.Args()[0]
 	log.Printf("Processing %s", path)
 
 	catalog, err := NewCatalog(path)
@@ -101,16 +135,18 @@ func main() {
 		log.Fatal(err)
 	}
 
-	count, err := catalog.GetSidecarCount()
-	if err != nil {
-		log.Fatal(err)
+	if !delete {
+		stats := catalog.GetSidecarStats()
+		log.Printf("There are %d sidecar entries totalling %d bytes on disk.",
+			stats.Count, stats.TotalSizeBytes)
+		return
 	}
-	log.Printf("There are %d sidecar entries.", count)
 
 	var processed_count uint
 	var error_count uint
 	var skip_count uint
 	var missing_count uint
+	var count uint
 	catalog.ProcessSidecars(func(sidecarPath string, originalPath string) error {
 		if _, err := os.Stat(sidecarPath); err == nil {
 			if _, err := os.Stat(originalPath); os.IsNotExist(err) {
@@ -132,6 +168,7 @@ func main() {
 			log.Printf("Missing %s", sidecarPath)
 			missing_count++
 		}
+		count++
 		return nil
 	})
 	log.Printf("Done.")
