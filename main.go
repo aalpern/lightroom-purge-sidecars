@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/pivotal-golang/bytefmt"
 	"log"
 	"os"
 )
@@ -137,8 +138,8 @@ func main() {
 
 	if !delete {
 		stats := catalog.GetSidecarStats()
-		log.Printf("There are %d sidecar entries totalling %d bytes on disk.",
-			stats.Count, stats.TotalSizeBytes)
+		log.Printf("There are %d sidecar entries totalling %s bytes on disk.",
+			stats.Count, bytefmt.ByteSize(uint64(stats.TotalSizeBytes)))
 		return
 	}
 
