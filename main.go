@@ -4,10 +4,11 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
-	"github.com/pivotal-golang/bytefmt"
 	"log"
 	"os"
+
+	"code.cloudfoundry.org/bytefmt"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type Catalog struct {
