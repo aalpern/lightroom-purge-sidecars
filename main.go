@@ -7,7 +7,7 @@ import (
 	"log"
 	"os"
 
-	"code.cloudfoundry.org/bytefmt"
+	"github.com/cloudfoundry/bytefmt"
 	_ "github.com/mattn/go-sqlite3"
 )
 
