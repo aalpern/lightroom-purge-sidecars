@@ -122,8 +122,9 @@ func (c *Catalog) GetSidecarStats() *SidecarStats {
 }
 
 func main() {
-	var delete = false
+	var delete, list bool
 	flag.BoolVar(&delete, "delete", false, "Delete all JPG sidecar files.")
+	flag.BoolVar(&list, "list", false, "List all JPG sidecar files.")
 	flag.Parse()
 
 	if len(flag.Args()) < 1 {
@@ -138,6 +139,13 @@ func main() {
 	}
 
 	if !delete {
+		if list {
+			catalog.ProcessSidecars(func(sidecarPath string, originalPath string) error {
+				log.Printf("%s => %s\n", sidecarPath, originalPath)
+				return nil
+			})
+		}
+
 		stats := catalog.GetSidecarStats()
 		log.Printf("There are %d sidecar entries totalling %s bytes on disk.",
 			stats.Count, bytefmt.ByteSize(uint64(stats.TotalSizeBytes)))
@@ -152,7 +160,7 @@ func main() {
 	catalog.ProcessSidecars(func(sidecarPath string, originalPath string) error {
 		if _, err := os.Stat(sidecarPath); err == nil {
 			if _, err := os.Stat(originalPath); os.IsNotExist(err) {
-				log.Printf("Missing original path for sidecar; Skipping %s", sidecarPath)
+				log.Printf("Missing original path for sidecar; Skipping %s\n", sidecarPath)
 				skip_count++
 				return nil
 			}
